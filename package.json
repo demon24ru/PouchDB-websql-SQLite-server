@@ -15,8 +15,7 @@
     "express": "^4.17.1",
     "express-pouchdb": "^4.2.0",
     "pouchdb-adapter-websql-core": "git+https://github.com/demon24ru/pouchdb-adapter-websql-core.git",
-    "websql": "^2.0.2",
-    "sqlite3": "^5.0.2"
+    "websql": "^2.0.2"
   },
   "files": []
 }
