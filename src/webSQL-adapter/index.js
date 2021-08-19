@@ -8,7 +8,8 @@ function createOpenDBFunction (opts) {
         // It's better to just use their "new" format and pass in a big ol'
         // options object. Also there are many options here that may come from
         // the PouchDB constructor, so we have to grab those.
-        name = (name || 'test') + '.db';
+        const isRemoteDB = /^\s*http\b/i.test(name);
+        name = (name || 'test') + (!isRemoteDB ? '.db': '');
 
         const openOpts = Object.assign({}, opts, {
             name: name,
