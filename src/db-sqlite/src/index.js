@@ -1,7 +1,4 @@
-const customOpenDatabase = require('websql/custom');
-const SQLiteDatabase = require('./SQLiteDatabase');
-
-const openDB = customOpenDatabase(SQLiteDatabase)
+const openDB = require('websql');
 
 function SQLitePlugin() {}
 
