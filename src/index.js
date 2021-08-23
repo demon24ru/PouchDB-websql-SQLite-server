@@ -1,6 +1,12 @@
-const PouchDB = require('pouchdb');
 
-PouchDB.plugin(require('pouchdb-adapter-sqlite-node'));
+const PouchDB = require('pouchdb-core')
+    .plugin(require('pouchdb-authentication'))
+    .plugin(require('pouchdb-adapter-http'))
+    .plugin(require('pouchdb-replication'))
+    .plugin(require('pouchdb-mapreduce'))
+    .plugin(require('pouchdb-find'))
+    .plugin(require('pouchdb-adapter-sqlite-node'));
+
 const MPouchDB = PouchDB.defaults({
     adapter: 'webSQL',
     prefix: 'pouch_'
