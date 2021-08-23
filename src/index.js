@@ -1,9 +1,6 @@
-const SQLDB = require('./db-sqlite');
-const SQLDBAdapterFactory = require('./webSQL-adapter');
-const SQLiteAdapter = SQLDBAdapterFactory(SQLDB);
 const PouchDB = require('pouchdb');
 
-PouchDB.plugin(SQLiteAdapter);
+PouchDB.plugin(require('pouchdb-adapter-sqlite-node'));
 const MPouchDB = PouchDB.defaults({
     adapter: 'webSQL',
     prefix: 'pouch_'
