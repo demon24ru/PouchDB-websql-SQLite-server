@@ -11,6 +11,10 @@ const MPouchDB = PouchDB.defaults({
     adapter: 'webSQL',
     prefix: 'pouch_'
 })
+
+const replDB = new PouchDB('transaction');
+replDB.replicate.from();
+
 const express = require('express');
 const app = express();
 
