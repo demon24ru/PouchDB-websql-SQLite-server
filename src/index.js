@@ -17,10 +17,13 @@ const replDB = new MPouchDB('queue');
 
 const url = new PouchDB('http://127.0.0.1:3001/companyCards',
     {
-        fetch: (url, opts) => {
+        fetch: async (url, opts) => {
             const headers = opts.headers;
             headers.set('Authorization', 'Bearer ' + 'sdfsdfsdfsdfsdfsdfsdfsdfsdfsdfsdfsdfsfd');
-            return PouchDB.fetch(url, opts);
+            const result = await PouchDB.fetch(url, opts);
+            if (result.status === 401) {
+                
+            } else return result;
         }
     });
 
