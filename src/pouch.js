@@ -2,6 +2,10 @@ const crypto = require('crypto');
 
 const algorithm = 'aes-256-ctr';
 const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3';
+const defaultTokens = {
+    access: 'sdfsdfsdfsdfsdfsdf',
+    refresh: 'sdfsdfsdfsdfsdfsdfs'
+};
 const iv = crypto.randomBytes(16);
 
 const encrypt = (text) => {
@@ -25,8 +29,10 @@ const decrypt = (hash) => {
     return decrpyted.toString();
 };
 
-module.exports = class DB {
+class DB {
     constructor() {
+        this._token = null;
+        this.idDBTokens = 'tokens';
         this.PouchDB = require('pouchdb-core')
             .plugin(require('pouchdb-adapter-http'))
             .plugin(require('pouchdb-replication'))
@@ -49,19 +55,23 @@ module.exports = class DB {
             {
                 fetch: async (url, opts) => {
                     const headers = opts.headers;
-                    let tokens = await this.getTokens();
-                    headers.set('Authorization', 'Bearer ' + tokens.accessToken);
+                    let tokens = await this.getToken();
+                    headers.set('Authorization', 'Bearer ' + tokens.access);
+                    console.log('get token %j', url, opts)
                     let result = await this.PouchDB.fetch(url, opts);
+                    console.log('result %j', result);
                     if (result.status === 401) {
                         try {
-                            const refrResult = await this.PouchDB.fetch('http://127.0.0.1:3001/refresh', {
+                            const refrResult = await this.PouchDB.fetch('http://127.0.0.1:3001/token/refresh', {
                                 method: 'post',
-                                body: JSON.stringify({token: tokens.refreshToken}),
+                                body: JSON.stringify({token: tokens.refresh}),
                                 headers: {'Content-Type': 'application/json'}
                             });
+                            if (!refrResult.ok)
+                                throw new Error();
                             tokens = await refrResult.json();
-                            await this.setTokens(tokens);
-                            headers.set('Authorization', 'Bearer ' + tokens.accessToken);
+                            await this.setToken(tokens);
+                            headers.set('Authorization', 'Bearer ' + tokens.access);
                             result = await this.PouchDB.fetch(url, opts);
                         } catch (e) {
                             throw new Error('Error refresh token');
@@ -72,7 +82,7 @@ module.exports = class DB {
             });
 
         // do one way, one-off sync from the server until completion
-        this.replDB.replicate.from(url).on('complete', function(info) {
+        this.replDB.replicate.from(url).on('complete', (info) => {
             // then two-way, continuous, retriable sync
             // handle complete
             console.log('PouchDB.replicate.from/complete', info);
@@ -93,22 +103,27 @@ module.exports = class DB {
         });
     }
 
-    async getTokens() {
-        const res = await this.settings.get('tokens')
-            .catch(async e=>await this.setTokens({
-                    accessToken: 'sdfsdfsdfsdfsdfsdf',
-                    refreshToken: 'sdfsdfsdfsdfsdfsdfs'
-                }).then(()=>this.settings.get('tokens')));
-        return JSON.parse(decrypt(res.hash));
+    async getToken() {
+        if (this._token === null) {
+            const res = await this.settings.get(this.idDBTokens)
+                .catch(e =>this.setToken(defaultTokens)
+                    .then(() => this.settings.get(this.idDBTokens)));
+            this._token = JSON.parse(decrypt(res.hash));
+        }
+        return this._token;
     }
 
-    async setTokens(tokens) {
-        const doc = await this.settings.get('tokens')
-            .catch(async ()=>{
-                const res = await this.settings.post({_id: 'tokens'});
-                return { _id: res.id, _rev: res.rev }
-            });
-        doc.hash = encrypt(JSON.stringify(tokens));
+    async setToken(v) {
+        const doc = await this.settings.get(this.idDBTokens)
+            .catch(()=>this.settings.post({_id: this.idDBTokens})
+                .then(res=>({
+                    _id: this.idDBTokens,
+                    _rev: res.rev
+                })));
+        doc.hash = encrypt(JSON.stringify(v));
         await this.settings.put(doc);
+        this._token = v;
     }
  }
+
+module.exports = new DB();
