@@ -4,12 +4,13 @@ const fetch = require('node-fetch');
 const algorithm = 'aes-256-ctr';
 const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3';
 const defaultTokens = {
-    access: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImRmZ2RmZ2RmZy1kZmdkZmdkZmctZGZnLWdmZ2ZnZi1mZGdkIiwiaWF0IjoxNjMwNzU3OTE2LCJleHAiOjE2MzA4NDM5MTZ9.PoO-1Hrnri185ZYDxmPMVF2aHU3k6tcJwV9vezuhQTM11',
+    access: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImRmZ2RmZ2RmZy1kZmdkZmdkZmctZGZnLWdmZ2ZnZi1mZGdkIiwiaWF0IjoxNjMwNzU3OTE2LCJleHAiOjE2MzA4NDM5MTZ9.PoO-1Hrnri185ZYDxmPMVF2aHU3k6tcJwV9vezuhQTM',
     refresh: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImRmZ2RmZ2RmZy1kZmdkZmdkZmctZGZnLWdmZ2ZnZi1mZGdkIiwiaWF0IjoxNjMwNzU3OTE2fQ.iPD1hmiyHSNysUanbkBhMeEFQOA35r5SaWpw8ONLc4E'
 };
-const iv = crypto.randomBytes(16);
 
 const encrypt = (text) => {
+
+    const iv = crypto.randomBytes(16);
 
     const cipher = crypto.createCipheriv(algorithm, secretKey, iv);
 
