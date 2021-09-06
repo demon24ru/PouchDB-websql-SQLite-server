@@ -55,7 +55,7 @@ class DB {
 
         const url = new this.PouchDB('http://127.0.0.1:3001/db/companyCards',
             {
-                fetch: this.fetchPouch
+                fetch: (url, opts) => this.fetchPouch.call(this, url, opts)
             });
 
         // do one way, one-off sync from the server until completion
