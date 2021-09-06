@@ -55,35 +55,7 @@ class DB {
 
         const url = new this.PouchDB('http://127.0.0.1:3001/db/companyCards',
             {
-                fetch: async (url, opts) => {
-                    const headers = opts.headers;
-                    let tokens = await this.getToken();
-                    headers.set('Authorization', 'Bearer ' + tokens.access);
-                    console.log('get token %j', url, opts)
-                    let result = await this.PouchDB.fetch(url, opts);
-                    console.log('result %j', result);
-                    if (result.status === 401) {
-                        try {
-                            console.log('get refreshToken http://127.0.0.1:3001/refresh')
-                            const refrResult = await fetch('http://127.0.0.1:3001/refresh', {
-                                method: 'post',
-                                body: JSON.stringify({token: tokens.refresh}),
-                                headers: {'Content-Type': 'application/json'}
-                            });
-                            console.log('refreshToken result %j', refrResult);
-                            if (!refrResult.ok) {
-                                throw new Error();
-                            }
-                            tokens = await refrResult.json();
-                            await this.setToken(tokens);
-                            headers.set('Authorization', 'Bearer ' + tokens.access);
-                            result = await this.PouchDB.fetch(url, opts);
-                        } catch (e) {
-                            throw new Error('Error refresh token');
-                        }
-                    }
-                    return result;
-                }
+                fetch: this.fetchPouch
             });
 
         // do one way, one-off sync from the server until completion
@@ -128,6 +100,36 @@ class DB {
         doc.hash = encrypt(JSON.stringify(v));
         await this.settings.put(doc);
         this._token = v;
+    }
+
+    async fetchPouch(url, opts) {
+        const headers = opts.headers;
+        let tokens = await this.getToken();
+        headers.set('Authorization', 'Bearer ' + tokens.access);
+        console.log('get token %j', url, opts)
+        let result = await this.PouchDB.fetch(url, opts);
+        console.log('result %j', result);
+        if (result.status === 401) {
+            try {
+                console.log('get refreshToken http://127.0.0.1:3001/refresh')
+                const refrResult = await fetch('http://127.0.0.1:3001/refresh', {
+                    method: 'post',
+                    body: JSON.stringify({token: tokens.refresh}),
+                    headers: {'Content-Type': 'application/json'}
+                });
+                console.log('refreshToken result %j', refrResult);
+                if (!refrResult.ok) {
+                    throw new Error();
+                }
+                tokens = await refrResult.json();
+                await this.setToken(tokens);
+                headers.set('Authorization', 'Bearer ' + tokens.access);
+                result = await this.PouchDB.fetch(url, opts);
+            } catch (e) {
+                throw new Error('Error refresh token');
+            }
+        }
+        return result;
     }
  }
 
