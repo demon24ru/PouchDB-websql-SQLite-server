@@ -18,7 +18,8 @@
     "pouchdb-replication": "^7.2.1",
     "express": "^4.17.1",
     "express-pouchdb": "^4.2.0",
-    "pouchdb-adapter-sqlite-node": "git+https://github.com/demon24ru/pouchdb-adapter-sqlite-node.git"
+    "pouchdb-adapter-sqlite-node": "git+https://github.com/demon24ru/pouchdb-adapter-sqlite-node.git",
+    "node-fetch": "2.6.0"
   },
   "files": []
 }
