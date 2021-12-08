@@ -4,8 +4,8 @@ const fetch = require('node-fetch');
 const algorithm = 'aes-256-ctr';
 const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3';
 const defaultTokens = {
-    access: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImRmZ2RmZ2RmZy1kZmdkZmdkZmctZGZnLWdmZ2ZnZi1mZGdkIiwiaWF0IjoxNjMwNzU3OTE2LCJleHAiOjE2MzA4NDM5MTZ9.PoO-1Hrnri185ZYDxmPMVF2aHU3k6tcJwV9vezuhQTM',
-    refresh: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImRmZ2RmZ2RmZy1kZmdkZmdkZmctZGZnLWdmZ2ZnZi1mZGdkIiwiaWF0IjoxNjMwNzU3OTE2fQ.iPD1hmiyHSNysUanbkBhMeEFQOA35r5SaWpw8ONLc4E'
+    access: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImIyNmFjNjkwLWVhOTItNDk1Mi05MzQ4LTY3YTYxZWU2MTVmZCIsImlhdCI6MTYzODUxNDAwNSwiZXhwIjoxNjQxMTA2MDA1fQ.Bl4xBSAbFcx9WrLCdCKPQTdB230rQ7b5J_0oEmCfYDc',
+    refresh: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImIyNmFjNjkwLWVhOTItNDk1Mi05MzQ4LTY3YTYxZWU2MTVmZCIsImlhdCI6MTYzODUxNDAwNSwiZXhwIjoxNjQxMTA2MDA1fQ.Bl4xBSAbFcx9WrLCdCKPQTdB230rQ7b5J_0oEmCfYDc'
 };
 
 const encrypt = (text) => {
@@ -53,7 +53,7 @@ class DB {
 
         this.settings = new this.MPouchDB('settings');
 
-        const url = new this.PouchDB('http://127.0.0.1:3001/db/companyCards',
+        const url = new this.PouchDB('http://192.168.6.37:5984/queue',
             {
                 fetch: (url, opts) => this.fetchPouch.call(this, url, opts)
             });
@@ -63,9 +63,56 @@ class DB {
             // then two-way, continuous, retriable sync
             // handle complete
             console.log('PouchDB.replicate.from/complete', info);
+            // this.replDB.replicate.from(url, {
+            //     live: true,
+            //     retry: true,
+            //     back_off_function: function (delay) {
+            //         if (!delay) {
+            //             return 500 + Math.floor(Math.random() * 2000);
+            //         } else if (delay >= 90000) {
+            //             return 90000;
+            //         }
+            //         return delay * 3;
+            //     }
+            // }).on('change', function (info) {
+            //     // handle change
+            //     console.log('PouchDB.replicate.from.sync/change', JSON.stringify(info, null,2));
+            // }).on('error', function (err) {
+            //     // handle error
+            //     console.log('PouchDB.replicate.from.sync/error', err);
+            // }).on('paused', function (err) {
+            //     // handle error
+            //     console.log('PouchDB.replicate.from.sync/paused', err);
+            // });
+            // this.replDB.replicate.to(url, {
+            //     live: true,
+            //     retry: true,
+            //     back_off_function: function (delay) {
+            //         if (!delay) {
+            //             return 500 + Math.floor(Math.random() * 2000);
+            //         } else if (delay >= 90000) {
+            //             return 90000;
+            //         }
+            //         return delay * 3;
+            //     }
+            // }).on('change', function (info) {
+            //     // handle change
+            //     console.log('PouchDB.replicate.to.sync/change', JSON.stringify(info, null,2));
+            // }).on('error', function (err) {
+            //     // handle error
+            //     console.log('PouchDB.replicate.to.sync/error', err);
+            // });
             this.replDB.sync(url, {
                 live: true,
                 retry: true,
+                back_off_function: function (delay) {
+                    if (!delay) {
+                        return 500 + Math.floor(Math.random() * 2000);
+                    } else if (delay >= 90000) {
+                        return 90000;
+                    }
+                    return delay * 3;
+                }
             }).on('change', function (info) {
                 // handle change
                 console.log('PouchDB.sync/change', JSON.stringify(info, null,2));
@@ -111,8 +158,8 @@ class DB {
         console.log('result %j', result);
         if (result.status === 401) {
             try {
-                console.log('get refreshToken http://127.0.0.1:3001/refresh')
-                const refrResult = await fetch('http://127.0.0.1:3001/refresh', {
+                console.log('get refreshToken http://127.0.0.1:4000/refresh')
+                const refrResult = await fetch('http://127.0.0.1:4000/refresh', {
                     method: 'post',
                     body: JSON.stringify({token: tokens.refresh}),
                     headers: {'Content-Type': 'application/json'}
