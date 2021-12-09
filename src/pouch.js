@@ -53,7 +53,7 @@ class DB {
 
         this.settings = new this.MPouchDB('settings');
 
-        const url = new this.PouchDB('http://192.168.8.1:5984/queue',
+        const url = new this.PouchDB('http://192.168.6.37:5984/db/queue',
             {
                 fetch: (url, opts) => this.fetchPouch.call(this, url, opts)
             });
@@ -120,8 +120,8 @@ class DB {
         console.log('result %j', result, url);
         if (result.status === 401) {
             try {
-                console.log('get refreshToken http://127.0.0.1:4000/refresh')
-                const refrResult = await fetch('http://127.0.0.1:4000/refresh', {
+                console.log('get refreshToken http://192.168.6.37:5984/refresh')
+                const refrResult = await fetch('http://192.168.6.37:5984/refresh', {
                     method: 'post',
                     body: JSON.stringify({token: tokens.refresh}),
                     headers: {'Content-Type': 'application/json'}
