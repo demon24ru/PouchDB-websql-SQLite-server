@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const algorithm = 'aes-256-ctr';
 const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3';
@@ -53,7 +53,7 @@ class DB {
 
         this.settings = new this.MPouchDB('settings');
 
-        const url = new this.PouchDB('http://192.168.6.37:5984/queue',
+        const url = new this.PouchDB('http://192.168.8.1:5984/queue',
             {
                 fetch: (url, opts) => this.fetchPouch.call(this, url, opts)
             });
@@ -63,45 +63,7 @@ class DB {
             // then two-way, continuous, retriable sync
             // handle complete
             console.log('PouchDB.replicate.from/complete', info);
-            // this.replDB.replicate.from(url, {
-            //     live: true,
-            //     retry: true,
-            //     back_off_function: function (delay) {
-            //         if (!delay) {
-            //             return 500 + Math.floor(Math.random() * 2000);
-            //         } else if (delay >= 90000) {
-            //             return 90000;
-            //         }
-            //         return delay * 3;
-            //     }
-            // }).on('change', function (info) {
-            //     // handle change
-            //     console.log('PouchDB.replicate.from.sync/change', JSON.stringify(info, null,2));
-            // }).on('error', function (err) {
-            //     // handle error
-            //     console.log('PouchDB.replicate.from.sync/error', err);
-            // }).on('paused', function (err) {
-            //     // handle error
-            //     console.log('PouchDB.replicate.from.sync/paused', err);
-            // });
-            // this.replDB.replicate.to(url, {
-            //     live: true,
-            //     retry: true,
-            //     back_off_function: function (delay) {
-            //         if (!delay) {
-            //             return 500 + Math.floor(Math.random() * 2000);
-            //         } else if (delay >= 90000) {
-            //             return 90000;
-            //         }
-            //         return delay * 3;
-            //     }
-            // }).on('change', function (info) {
-            //     // handle change
-            //     console.log('PouchDB.replicate.to.sync/change', JSON.stringify(info, null,2));
-            // }).on('error', function (err) {
-            //     // handle error
-            //     console.log('PouchDB.replicate.to.sync/error', err);
-            // });
+
             this.replDB.sync(url, {
                 live: true,
                 retry: true,
@@ -154,8 +116,8 @@ class DB {
         let tokens = await this.getToken();
         headers.set('Authorization', 'Bearer ' + tokens.access);
         console.log('get token %j', url, opts)
-        let result = await this.PouchDB.fetch(url, opts);
-        console.log('result %j', result);
+        let result = await fetch(url, opts);
+        console.log('result %j', result, url);
         if (result.status === 401) {
             try {
                 console.log('get refreshToken http://127.0.0.1:4000/refresh')
@@ -171,7 +133,7 @@ class DB {
                 tokens = await refrResult.json();
                 await this.setToken(tokens);
                 headers.set('Authorization', 'Bearer ' + tokens.access);
-                result = await this.PouchDB.fetch(url, opts);
+                result = await fetch(url, opts);
             } catch (e) {
                 throw new Error('Error refresh token');
             }
