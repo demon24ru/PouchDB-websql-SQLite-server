@@ -4,8 +4,8 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 const algorithm = 'aes-256-ctr';
 const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3';
 const defaultTokens = {
-    access: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImIyNmFjNjkwLWVhOTItNDk1Mi05MzQ4LTY3YTYxZWU2MTVmZCIsImlhdCI6MTYzODUxNDAwNSwiZXhwIjoxNjQxMTA2MDA1fQ.Bl4xBSAbFcx9WrLCdCKPQTdB230rQ7b5J_0oEmCfYDc',
-    refresh: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImIyNmFjNjkwLWVhOTItNDk1Mi05MzQ4LTY3YTYxZWU2MTVmZCIsImlhdCI6MTYzODUxNDAwNSwiZXhwIjoxNjQxMTA2MDA1fQ.Bl4xBSAbFcx9WrLCdCKPQTdB230rQ7b5J_0oEmCfYDc'
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaWx0ZXIiOnsiZGV2aWNlSWQiOiJiMjZhYzY5MC1lYTkyLTQ5NTItOTM0OC02N2E2MWVlNjE1ZmQifSwicGVybWlzc2lvbiI6eyJxdWV1ZSI6eyJjaGFuZ2UiOlsiZ2V0IiwicG9zdCIsInB1dCIsImRlbGV0ZSJdfX0sImlhdCI6MTY0MDY3Mzg5OSwiZXhwIjoxNjQzMjY1ODk5fQ.aZwUakKYxQYw6QDwHG9krVnUa371PHCnZdqIfjvGiTI',
+    refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaWx0ZXIiOnsiZGV2aWNlSWQiOiJiMjZhYzY5MC1lYTkyLTQ5NTItOTM0OC02N2E2MWVlNjE1ZmQifSwicGVybWlzc2lvbiI6eyJxdWV1ZSI6eyJjaGFuZ2UiOlsiZ2V0IiwicG9zdCIsInB1dCIsImRlbGV0ZSJdfX0sImlhdCI6MTY0MDY3Mzg5OSwiZXhwIjoxOTU2MDMzODk5fQ.5Uhve7Ic3_In3HRoBHEm6RjwYHrHJDx5WCgqswI-7sQ'
 };
 
 const encrypt = (text) => {
@@ -114,7 +114,7 @@ class DB {
     async fetchPouch(url, opts) {
         const headers = opts.headers;
         let tokens = await this.getToken();
-        headers.set('Authorization', 'Bearer ' + tokens.access);
+        headers.set('Authorization', 'Bearer ' + tokens.token);
         console.log('get token %j', url, opts)
         let result = await fetch(url, opts);
         console.log('result %j', result, url);
@@ -123,7 +123,7 @@ class DB {
                 console.log('get refreshToken http://192.168.6.37:5984/refresh')
                 const refrResult = await fetch('http://192.168.6.37:5984/refresh', {
                     method: 'post',
-                    body: JSON.stringify({token: tokens.refresh}),
+                    body: JSON.stringify({token: tokens.refreshToken}),
                     headers: {'Content-Type': 'application/json'}
                 });
                 console.log('refreshToken result %j', refrResult);
@@ -132,7 +132,7 @@ class DB {
                 }
                 tokens = await refrResult.json();
                 await this.setToken(tokens);
-                headers.set('Authorization', 'Bearer ' + tokens.access);
+                headers.set('Authorization', 'Bearer ' + tokens.token);
                 result = await fetch(url, opts);
             } catch (e) {
                 throw new Error('Error refresh token');
