@@ -4,8 +4,8 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 const algorithm = 'aes-256-ctr';
 const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3';
 const defaultTokens = {
-    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaWx0ZXIiOnsiZGV2aWNlSWQiOiJhYWFmN2UyZi1jNzAzLTRiNjktYTRlZi1hMTgxMTA5ZjM4YmUifSwicGVybWlzc2lvbiI6eyJxdWV1ZSI6WyJjaGFuZ2UiXX0sImlhdCI6MTY0MjE0NzkwMCwiZXhwIjoxNjQ0NzM5OTAwfQ.pIGrYbM0pviVbAIF0bKXgGhXj1w6v_oJIj33PhPdvoU',
-    refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaWx0ZXIiOnsiZGV2aWNlSWQiOiI4NzE2NGJhNi04MGIyLTQyZWMtYmQzZi05MmYyNjc5OTdkNGYifSwicGVybWlzc2lvbiI6eyJxdWV1ZSI6WyJjaGFuZ2UiXX0sImlhdCI6MTY0MjUwMjQ0MCwiZXhwIjoxOTU3ODYyNDQwfQ.7guMh3B-2cEHW6t0W91jsAX11i1bk6FjifwTGfpmX1k'
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaWx0ZXIiOnsiZGV2aWNlSWQiOiJiMjZhYzY5MC1lYTkyLTQ5NTItOTM0OC02N2E2MWVlNjE1ZmQifSwicGVybWlzc2lvbiI6eyJxdWV1ZSI6WyJjaGFuZ2UiXX0sImlhdCI6MTY0MjUwMjkzMiwiZXhwIjoxNjQ1MDk0OTMyfQ.cP_ADR4Xo5tqEQ5IljGeoctyslltveLc4OAzR8AGuWA',
+    refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaWx0ZXIiOnsiZGV2aWNlSWQiOiJiMjZhYzY5MC1lYTkyLTQ5NTItOTM0OC02N2E2MWVlNjE1ZmQifSwicGVybWlzc2lvbiI6eyJxdWV1ZSI6WyJjaGFuZ2UiXX0sImlhdCI6MTY0MjUwMjkzMiwiZXhwIjoxOTU3ODYyOTMyfQ.XhX0-OEimsUq07Wb-g2li_AvXZTc0DJ_TyCbETRH_kA'
 };
 
 const encrypt = (text) => {
