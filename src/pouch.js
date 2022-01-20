@@ -1,12 +1,9 @@
 const crypto = require('crypto');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const { reqCheckerUrl, request } = require('./reqCheckerUrl');
 
 const algorithm = 'aes-256-ctr';
 const secretKey = 'vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3';
-const defaultTokens = {
-    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaWx0ZXIiOnsiZGV2aWNlSWQiOiJiMjZhYzY5MC1lYTkyLTQ5NTItOTM0OC02N2E2MWVlNjE1ZmQifSwicGVybWlzc2lvbiI6eyJxdWV1ZSI6WyJjaGFuZ2UiXX0sImlhdCI6MTY0MjUwMjkzMiwiZXhwIjoxNjQ1MDk0OTMyfQ.cP_ADR4Xo5tqEQ5IljGeoctyslltveLc4OAzR8AGuWA',
-    refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmaWx0ZXIiOnsiZGV2aWNlSWQiOiJiMjZhYzY5MC1lYTkyLTQ5NTItOTM0OC02N2E2MWVlNjE1ZmQifSwicGVybWlzc2lvbiI6eyJxdWV1ZSI6WyJjaGFuZ2UiXX0sImlhdCI6MTY0MjUwMjkzMiwiZXhwIjoxOTU3ODYyOTMyfQ.XhX0-OEimsUq07Wb-g2li_AvXZTc0DJ_TyCbETRH_kA'
-};
 
 const encrypt = (text) => {
 
@@ -34,7 +31,11 @@ const decrypt = (hash) => {
 class DB {
     constructor() {
         this._token = null;
+        this._idDevice = null;
+        this.sync = null;
         this.idDBTokens = 'tokens';
+        this.idDBdevice = 'device';
+        this.url = 'http://192.168.6.37:5984';
         this.PouchDB = require('pouchdb-core')
             .plugin(require('pouchdb-adapter-http'))
             .plugin(require('pouchdb-replication'))
@@ -49,22 +50,34 @@ class DB {
             prefix: 'pouch_'
         })
 
-        this.replDB = new this.MPouchDB('queue');
+        this.queueDB = new this.MPouchDB('queue');
 
-        this.settings = new this.MPouchDB('settings');
+        this.settingsDB = new this.MPouchDB('settings');
 
-        const url = new this.PouchDB('http://192.168.6.37:5984/db/queue',
-            {
-                fetch: (url, opts) => this.fetchPouch.call(this, url, opts)
+        this.queueRemotDB = new this.PouchDB(
+            this.url + '/db/queue',
+            { fetch: (url, opts) => this.fetchPouch.call(this, url, opts) }
+        );
+
+        this.init();
+    }
+
+    async init() {
+        if (await this.getDeviceId()) {
+            new reqCheckerUrl(this.url, () => {
+                this.initReplication();
             });
+        }
+    }
 
+    initReplication() {
         // do one way, one-off sync from the server until completion
-        this.replDB.replicate.from(url).on('complete', (info) => {
+        this.queueDB.replicate.from(this.queueRemotDB).on('complete', (info) => {
             // then two-way, continuous, retriable sync
             // handle complete
             console.log('PouchDB.replicate.from/complete', info);
 
-            this.replDB.sync(url, {
+            this.sync = this.queueDB.sync(this.queueRemotDB, {
                 live: true,
                 retry: true,
                 back_off_function: function (delay) {
@@ -89,39 +102,94 @@ class DB {
         });
     }
 
+    async getDeviceId() {
+        if (this._idDevice)
+            return this._idDevice;
+
+        try {
+            const res = await this.settingsDB.get(this.idDBdevice);
+            this._idDevice = res.id;
+        } catch (e) {}
+
+        return this._idDevice;
+    }
+
+    async commissioning() {
+        console.log('commissioning');
+        if (!this._idDevice) {
+            const res = await request(`${this.url}/commissioning`, {
+                method: 'post',
+                body: JSON.stringify({type: '4a3c1b63-79a8-40f3-ab5e-90837bdecee7'}),
+                headers: {'Content-Type': 'application/json'}
+            });
+
+            try {
+                const tokenData = await res.json();
+                await this.setToken(tokenData);
+                await this.settingsDB.post({_id: this.idDBdevice, id: tokenData.id});
+                this._idDevice = tokenData.id;
+            } catch (e) {
+            }
+
+            await this.init();
+        }
+    }
+
+    async unCommissioning() {
+        console.log('unCommissioning');
+        if (this._idDevice) {
+            if (this.sync)
+                this.sync.cancel();
+
+            try {
+                await this.queueDB.destroy();
+                this.queueDB = new this.MPouchDB('queue');
+
+                await this.settingsDB.destroy();
+                this.settingsDB = new this.MPouchDB('settings');
+
+                this._idDevice = null;
+                this._token = null;
+            } catch (e) {}
+        }
+    }
+
     async getToken() {
         if (this._token === null) {
-            const res = await this.settings.get(this.idDBTokens)
-                .catch(e =>this.setToken(defaultTokens)
-                    .then(() => this.settings.get(this.idDBTokens)));
-            this._token = JSON.parse(decrypt(res.hash));
+            try {
+                const res = await this.settingsDB.get(this.idDBTokens);
+                this._token = JSON.parse(decrypt(res.hash));
+            } catch (e) {
+                await this.unCommissioning();
+            }
         }
         return this._token;
     }
 
     async setToken(v) {
-        const doc = await this.settings.get(this.idDBTokens)
-            .catch(()=>this.settings.post({_id: this.idDBTokens})
-                .then(res=>({
-                    _id: this.idDBTokens,
-                    _rev: res.rev
-                })));
+        const doc = await this.settingsDB.get(this.idDBTokens)
+            .catch(() =>
+                this.settingsDB.post({_id: this.idDBTokens})
+                    .then(res => ({
+                        _id: this.idDBTokens,
+                        _rev: res.rev
+                    })));
         doc.hash = encrypt(JSON.stringify(v));
-        await this.settings.put(doc);
+        await this.settingsDB.put(doc);
         this._token = v;
     }
 
     async fetchPouch(url, opts) {
         const headers = opts.headers;
         let tokens = await this.getToken();
-        headers.set('Authorization', 'Bearer ' + tokens.token);
+        headers.set('Authorization', `Bearer ${tokens.token}`);
         console.log('get token %j', url, opts)
         let result = await fetch(url, opts);
         console.log('result %j', result, url);
         if (result.status === 401) {
             try {
-                console.log('get refreshToken http://192.168.6.37:5984/refresh')
-                const refrResult = await fetch('http://192.168.6.37:5984/refresh', {
+                console.log(`get refreshToken ${this.url}/refresh`)
+                const refrResult = await fetch(`${this.url}/refresh`, {
                     method: 'post',
                     body: JSON.stringify({token: tokens.refreshToken}),
                     headers: {'Content-Type': 'application/json'}
@@ -132,7 +200,7 @@ class DB {
                 }
                 tokens = await refrResult.json();
                 await this.setToken(tokens);
-                headers.set('Authorization', 'Bearer ' + tokens.token);
+                headers.set('Authorization', `Bearer ${tokens.token}`);
                 result = await fetch(url, opts);
             } catch (e) {
                 throw new Error('Error refresh token');
