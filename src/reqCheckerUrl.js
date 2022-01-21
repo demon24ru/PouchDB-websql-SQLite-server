@@ -22,9 +22,8 @@ class reqCheckerUrl {
     constructor(url, fn, debug) {
         this.stopTimer();
         this.url = url;
-        if (typeof fn === 'function') {
+        if (typeof fn === 'function')
             this.fn = fn;
-        }
         if (!!debug)
             this.debug = !!debug;
         this.startTimer();
