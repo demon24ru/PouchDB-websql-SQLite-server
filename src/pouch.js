@@ -183,7 +183,7 @@ class DB {
     }
 
     async getToken() {
-        if (this.#token === null) {
+        if (!this.#token) {
             try {
                 const res = await this.settingsDB.get(this.#idDBTokens);
                 this.#token = JSON.parse(decrypt(res.hash));
