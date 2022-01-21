@@ -4,7 +4,9 @@ const express = require('express');
 const app = express();
 
 app.use(require('express-pouchdb')(pouch.MPouchDB));
-
+pouch.setConfig({
+    debug: true
+})
 // setTimeout(()=> pouch.commissioning(), 60*1000);
 //
 // setTimeout(()=> pouch.unCommissioning(), 5*60*1000);

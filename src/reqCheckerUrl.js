@@ -19,25 +19,27 @@ const request = async (url, opt) => {
 
 class reqCheckerUrl {
 
-    constructor(url, fn) {
+    constructor(url, fn, debug) {
         this.stopTimer();
         this.url = url;
         if (typeof fn === 'function') {
             this.fn = fn;
         }
+        if (!!debug)
+            this.debug = !!debug;
         this.startTimer();
     }
 
     getCounters () {
         request(this.url)
             .then(() => {
-                console.log(this.url + '->', true);
+                this.debug && console.log(this.url + '->', true);
                 this.stopTimer();
                 if (this.fn)
                     this.fn();
             })
             .catch((err) => {
-                console.log(this.url + '->', false, err);
+                this.debug && console.log(this.url + '->', false, err);
                 this.startTimer(60*1000)
             })
     }
