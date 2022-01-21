@@ -36,6 +36,8 @@ class DB {
         this.idDBTokens = 'tokens';
         this.idDBdevice = 'device';
         this.url = 'http://192.168.6.37:5984';
+        this.queueDBName = 'queue';
+        this.settingsDBName = 'settings';
         this.PouchDB = require('pouchdb-core')
             .plugin(require('pouchdb-adapter-http'))
             .plugin(require('pouchdb-replication'))
@@ -50,16 +52,23 @@ class DB {
             prefix: 'pouch_'
         })
 
-        this.queueDB = new this.MPouchDB('queue');
+        this.queueDB = new this.MPouchDB(this.queueDBName);
 
-        this.settingsDB = new this.MPouchDB('settings');
+        this.settingsDB = new this.MPouchDB(this.settingsDBName);
 
         this.queueRemotDB = new this.PouchDB(
-            this.url + '/db/queue',
+            `${this.url}/db/${this.queueDBName}`,
             { fetch: (url, opts) => this.fetchPouch.call(this, url, opts) }
         );
 
         this.init();
+    }
+
+    setConfig({ fn, debug }) {
+        if (typeof fn === 'function')
+            this.fn = fn;
+        if (debug)
+            this.debug = !!debug;
     }
 
     async init() {
@@ -75,12 +84,12 @@ class DB {
         this.queueDB.replicate.from(this.queueRemotDB).on('complete', (info) => {
             // then two-way, continuous, retriable sync
             // handle complete
-            console.log('PouchDB.replicate.from/complete', info);
+            this.debug && console.log('PouchDB.replicate.from/complete', info);
 
             this.sync = this.queueDB.sync(this.queueRemotDB, {
                 live: true,
                 retry: true,
-                back_off_function: function (delay) {
+                back_off_function: (delay) => {
                     if (!delay) {
                         return 500 + Math.floor(Math.random() * 2000);
                     } else if (delay >= 90000) {
@@ -88,17 +97,19 @@ class DB {
                     }
                     return delay * 3;
                 }
-            }).on('change', function (info) {
+            }).on('change', (info) => {
                 // handle change
-                console.log('PouchDB.sync/change', JSON.stringify(info, null,2));
-            }).on('error', function (err) {
+                this.debug && console.log('PouchDB.sync/change', JSON.stringify(info, null,2));
+                if (this.fn)
+                    this.fn(info);
+            }).on('error', (err) => {
                 // handle error
-                console.log('PouchDB.sync/error', err);
+                this.debug && console.log('PouchDB.sync/error', err);
             });
 
-        }).on('error', function (err) {
+        }).on('error', (err) => {
             // handle error
-            console.log('PouchDB.replicate.from/error', err);
+            this.debug && console.log('PouchDB.replicate.from/error', err);
         });
     }
 
@@ -115,7 +126,7 @@ class DB {
     }
 
     async commissioning() {
-        console.log('commissioning');
+        this.debug && console.log('commissioning');
         if (!this._idDevice) {
             const res = await request(`${this.url}/commissioning`, {
                 method: 'post',
@@ -136,17 +147,17 @@ class DB {
     }
 
     async unCommissioning() {
-        console.log('unCommissioning');
+        this.debug && console.log('unCommissioning');
         if (this._idDevice) {
             if (this.sync)
                 this.sync.cancel();
 
             try {
                 await this.queueDB.destroy();
-                this.queueDB = new this.MPouchDB('queue');
+                this.queueDB = new this.MPouchDB(this.queueDBName);
 
                 await this.settingsDB.destroy();
-                this.settingsDB = new this.MPouchDB('settings');
+                this.settingsDB = new this.MPouchDB(this.settingsDBName);
 
                 this._idDevice = null;
                 this._token = null;
@@ -183,18 +194,18 @@ class DB {
         const headers = opts.headers;
         let tokens = await this.getToken();
         headers.set('Authorization', `Bearer ${tokens.token}`);
-        console.log('get token %j', url, opts)
+        this.debug && console.log('get token %j', url, opts)
         let result = await fetch(url, opts);
-        console.log('result %j', result, url);
+        this.debug && console.log('result %j', result, url);
         if (result.status === 401) {
             try {
-                console.log(`get refreshToken ${this.url}/refresh`)
+                this.debug && console.log(`get refreshToken ${this.url}/refresh`)
                 const refrResult = await fetch(`${this.url}/refresh`, {
                     method: 'post',
                     body: JSON.stringify({token: tokens.refreshToken}),
                     headers: {'Content-Type': 'application/json'}
                 });
-                console.log('refreshToken result %j', refrResult);
+                this.debug && console.log('refreshToken result %j', refrResult);
                 if (!refrResult.ok) {
                     throw new Error();
                 }
