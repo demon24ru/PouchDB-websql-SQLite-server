@@ -125,6 +125,11 @@ class DB {
                 this.debug && console.log('PouchDB.sync/error', err);
             });
 
+        }).on('change', (info) => {
+            // handle change
+            this.debug && console.log('PouchDB.replicate.from/change ' + JSON.stringify(info, null,2));
+            if (this.fn)
+                this.fn(info);
         }).on('error', (err) => {
             // handle error
             this.debug && console.log('PouchDB.replicate.from/error', err);
