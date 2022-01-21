@@ -153,13 +153,10 @@ class DB {
                 headers: {'Content-Type': 'application/json'}
             });
 
-            try {
-                const tokenData = await res.json();
-                await this.setToken(tokenData);
-                await this.settingsDB.post({_id: this.#idDBdevice, id: tokenData.id});
-                this.#idDevice = tokenData.id;
-            } catch (e) {
-            }
+            const tokenData = await res.json();
+            await this.setToken(tokenData);
+            await this.settingsDB.post({_id: this.#idDBdevice, id: tokenData.id});
+            this.#idDevice = tokenData.id;
 
             await this.init();
         }
