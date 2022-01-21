@@ -188,7 +188,7 @@ class DB {
                 const res = await this.settingsDB.get(this.#idDBTokens);
                 this.#token = JSON.parse(decrypt(res.hash));
             } catch (e) {
-                await this.unCommissioning();
+                await this.decommissioning();
             }
         }
         return this.#token;
