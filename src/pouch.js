@@ -163,9 +163,10 @@ class DB {
 
             await this.init();
         }
+        return this.getDeviceId();
     }
 
-    async unCommissioning() {
+    async decommissioning() {
         this.debug && console.log('unCommissioning');
         if (this.#idDevice) {
             if (this.sync)
